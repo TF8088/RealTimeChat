@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S2Socket Chat</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <link rel="stylesheet" href="/public/css/styles.css">
+</head>
+
+<body class="is-mobile">
+    <div class="container is-vcentered">
+        <div class="columns is-centered">
+            <!-- Left Column for Chat and Input -->
+            <div class="column is-half">
+                <div id="chat-container" class="box">
+                    <ul id="messages" class="content"></ul>
+                </div>
+
+                <form id="form" class="field has-addons">
+                    <div class="control is-expanded">
+                        <input id="input" class="input" autocomplete="off" required />
+                    </div>
+                    <div class="control">
+                        <button id="sendMessage" class="button is-primary">Send</button>
+                    </div>
+                    <div class="control">
+                        <button id="clearMessage" class="button is-danger">Clear</button>
+                    </div>
+                    <div class="control">
+                        <button id="exportButton" class="button is-success">Export</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column for User Info -->
+            <div class="column is-one-quarter">
+                <div class="wrapper-user-info box">
+                    <ul id="userList" class="content"></ul>
+                    <p>Total Users: <span id="userTotal">0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/public/js/index.js"></script>
+</body>
+
+</html>
