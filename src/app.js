@@ -1,4 +1,3 @@
-// Required modules
 const express = require('express');
 const http = require('http');
 const { join } = require('path');
@@ -6,16 +5,15 @@ const { Server } = require('socket.io');
 const ejs = require('ejs');
 const DOMPurify = require('dompurify'); // Sanitization library (to-do)
 const fs = require('fs');
+const path = require('path');
+const jwt = require('jsonwebtoken');
 
-// Load environment variables from .env file
 require('dotenv').config()
 
-// Express app setup
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// View engine setup
 app.set('view engine', 'ejs');
 app.set('views', join(__dirname, './public'));
 app.use('/public', express.static(join(__dirname, './public')));
@@ -24,75 +22,121 @@ app.use('/public', express.static(join(__dirname, './public')));
 const connectedUsers = new Map();
 const messagesMap = new Map();
 
-// Route to render the chat application
+let userCounter = 1;
+
+const getTime = () => {
+    const time = new Date();
+    const formattedMinutes = time.getMinutes() < 10 ? `0${time.getMinutes()}` : time.getMinutes();
+    return `[${time.getHours()}:${formattedMinutes}:${time.getSeconds()}]`;
+};
+
+const generateAuthToken = (userId) => {
+    return jwt.sign({ user: userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+const checkUserToken = (socket, next) => {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+        return next(new Error('Authentication failed: jwt must be provided'));
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+
+        if (err) {
+            return next(new Error('Authentication failed: invalid jwt'));
+        }
+
+        socket.user = decoded.user;
+
+        next();
+    });
+};
+
+const saveUserInformation = () => {
+    const filePath = path.join(__dirname, 'user_information.json');
+
+    const userInformationArray = Array.from(connectedUsers.values()).map(user => {
+        const time = new Date();
+        const formattedTime = `${time.getFullYear()}-${(time.getMonth() + 1).toString().padStart(2, '0')}-${time.getDate().toString().padStart(2, '0')} ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')}`;
+        return {
+            name: user.username,
+            socketId: user.socket.id,
+            ip: user.socket.handshake.address.replace("::ffff:", ""),
+            connection: formattedTime
+        };
+    });
+
+    let existingData = [];
+
+    try {
+        const existingFile = fs.readFileSync(filePath, 'utf8');
+        existingData = JSON.parse(existingFile);
+    } catch (error) {
+        console.error('Error reading existing file:', error.message);
+    }
+
+    const combinedData = existingData.concat(userInformationArray);
+
+    fs.writeFileSync(filePath, JSON.stringify(combinedData, null, 2));
+};
+
 app.get('/', (req, res) => {
     res.render('index');
 });
 
-// Route to export chat messages
 app.get('/export', (req, res) => {
-    // Get the current time for timestamping exported messages
-    const time = new Date();
-    const hours = time.getHours();
-    const minutes = time.getMinutes();
-    const seconds = time.getSeconds();
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    const stringTime = `[${hours}:${formattedMinutes}:${seconds}]`;
+    const stringTime = getTime();
 
-    // Create an array of formatted messages
     const messagesArray = Array.from(messagesMap.values()).map(entry => `${stringTime} ${entry.username}: ${entry.message}`);
-    
-    // Combine messages into a single string
+
     const content = messagesArray.join('\n');
 
-    // Define the file path for exported messages
     const filePath = join(__dirname, 'exported_messages.txt');
 
-    // Write messages to a file
     fs.writeFileSync(filePath, content);
 
-    // Provide the file for download
     res.download(filePath, 'exported_messages.txt', () => {
-        // After download, remove the temporary file
         fs.unlinkSync(filePath);
     });
 });
 
-// Socket.io event handling
 io.on('connection', (socket) => {
-    // Extract client IP from the socket handshake
+    
     const clientIp = socket.handshake.address.replace("::ffff:", "");
 
-    // Log new user connection
     console.log('[👤] New User Connected', clientIp);
 
-    // Event handler for receiving a username from a connected client
+    const initialToken = socket.handshake.auth.token;
+
+    if (!initialToken) {
+        const authToken = generateAuthToken(socket.id);
+        socket.emit('authToken', authToken);
+    }
+
     socket.on('username', (username) => {
-        // Store user information in the connectedUsers map
+    
         connectedUsers.set(socket.id, { username, socket });
-
-        // Get the current number of connected users
+    
+        // if (initialToken) {
+        //     saveUserInformation();
+        // }
+    
         const users = connectedUsers.size;
-
-        // Emit an updated user list to all clients
+    
         io.emit('updateUserList', {
             users: Array.from(connectedUsers.values()).map(user => user.username),
             numbusers: users
         });
-
-        // Store the username in the socket object for reference
+    
         socket.username = username;
     });
-
-    // Event handler for receiving chat messages from clients
+    // to change (todo)
     socket.on('chatMessage', (msg) => {
-        // Get the username associated with the socket
         const username = socket.username; 
 
-        // Store the message in the messagesMap
         messagesMap.set(socket.id, { username, message: msg });
 
-        // Get the current time for timestamping the message
         const time = new Date();
         const hours = time.getHours();
         const minutes = time.getMinutes();
@@ -100,7 +144,6 @@ io.on('connection', (socket) => {
         const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
         const stringTime = `[${hours}:${formattedMinutes}:${seconds}]`;
 
-        // Broadcast the chat message to all clients
         if (connectedUsers.get(socket.id)) {
             console.log("[💬] New Messages", clientIp);
             io.emit('chatMessage', `${stringTime} ${connectedUsers.get(socket.id).username}: ${msg}`);
@@ -109,18 +152,13 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Event handler for user disconnection
     socket.on('disconnect', () => {
-        // Log user disconnection
         console.log('[❌] User Disconnected:', socket.id);
 
-        // Remove the disconnected user from the connectedUsers map
         connectedUsers.delete(socket.id);
 
-        // Get the current number of connected users
         const users = connectedUsers.size;
 
-        // Emit an updated user list to all clients
         io.emit('updateUserList', {
             users: Array.from(connectedUsers.values()).map(user => user.username),
             numbusers: users
@@ -128,7 +166,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start the server on the specified port
 server.listen(process.env.PORT, () => {
     console.log(`[⚡] http://localhost:${process.env.PORT}`);
 });
