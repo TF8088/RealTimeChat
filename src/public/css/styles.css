@@ -5,6 +5,23 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    
+}
+
+i {
+    margin-right: 0.5em;
+}
+
+li {
+    margin-top: 0.5em;
+}
+
+#input {
+    border: 1px solid #888;
+}
+
+#chat-box {
+    border: 1px solid #888;
 }
 
 #chat-container {
@@ -12,11 +29,20 @@ body {
     overflow-y: auto;
 }
 
+#title {
+    margin: 0.4em;
+    margin-bottom: 0.5em;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
 #chat-container {
     height: 400px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #888 transparent;
+    border: 1px solid #888;
 }
 
 #chat-container::-webkit-scrollbar {
@@ -32,13 +58,24 @@ body {
     background-color: transparent;
 }
 
+.wrapper-user-info {
+    border: 1px solid #888;
+    margin: 0;
+}
+
 .user-actions {
-    margin-top: 20px;
+    margin-top: 1em;
 }
 
 .user-actions button {
-    margin-right: 10px;
+    margin: 5px;
 }
-.user-actions .button i {
-    margin-right: 0.5em; 
-}
+
+@media (max-width: 600px) { 
+    * {
+        margin: 0.5em;
+    }
+    #chat-box {
+        margin: 0.5em;
+    }
+}   
