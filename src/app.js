@@ -22,8 +22,6 @@ app.use('/public', express.static(join(__dirname, './public')));
 const connectedUsers = new Map();
 const messagesMap = new Map();
 
-let userCounter = 1;
-
 const getTime = () => {
     const time = new Date();
     const formattedMinutes = time.getMinutes() < 10 ? `0${time.getMinutes()}` : time.getMinutes();
@@ -32,6 +30,10 @@ const getTime = () => {
 
 const generateAuthToken = (userId) => {
     return jwt.sign({ user: userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+const generateRandomUsername = () => {
+    return "User#" + Math.floor(Math.random() * 1000);
 };
 
 const checkUserToken = (socket, next) => {
@@ -103,10 +105,6 @@ app.get('/export', (req, res) => {
 
 io.on('connection', (socket) => {
     
-    const clientIp = socket.handshake.address.replace("::ffff:", "");
-
-    console.log('[👤] New User Connected', clientIp);
-
     const initialToken = socket.handshake.auth.token;
 
     if (!initialToken) {
@@ -117,10 +115,10 @@ io.on('connection', (socket) => {
     socket.on('username', (username) => {
     
         connectedUsers.set(socket.id, { username, socket });
-    
-        // if (initialToken) {
-        //     saveUserInformation();
-        // }
+        
+        if (initialToken) {
+            saveUserInformation();
+        }
     
         const users = connectedUsers.size;
     
@@ -131,29 +129,43 @@ io.on('connection', (socket) => {
     
         socket.username = username;
     });
-    // to change (todo)
+
+    socket.on('usernameEmpty', () => {
+        const generatedUsername = generateRandomUsername();
+
+        connectedUsers.set(socket.id, { username: generatedUsername, socket });
+
+        if (initialToken) {
+            saveUserInformation();
+        }
+
+        const users = connectedUsers.size;
+
+        io.emit('updateUserList', {
+            users: Array.from(connectedUsers.values()).map(user => user.username),
+            numbusers: users
+        });
+
+        socket.username = generatedUsername;
+    });
+
     socket.on('chatMessage', (msg) => {
         const username = socket.username; 
 
         messagesMap.set(socket.id, { username, message: msg });
 
-        const time = new Date();
-        const hours = time.getHours();
-        const minutes = time.getMinutes();
-        const seconds = time.getSeconds();
-        const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-        const stringTime = `[${hours}:${formattedMinutes}:${seconds}]`;
+        const stringTime = getTime();
 
         if (connectedUsers.get(socket.id)) {
-            console.log("[💬] New Messages", clientIp);
             io.emit('chatMessage', `${stringTime} ${connectedUsers.get(socket.id).username}: ${msg}`);
-        } else {
-            console.log("[⚠️ ] No-name User Messages", clientIp);
+        } else 
+        {
+            console.log("[⚠️ ] No-name User Messages");
         }
     });
 
     socket.on('disconnect', () => {
-        console.log('[❌] User Disconnected:', socket.id);
+        // console.log('[❌] User Disconnected:', socket.id);
 
         connectedUsers.delete(socket.id);
 
@@ -164,6 +176,7 @@ io.on('connection', (socket) => {
             numbusers: users
         });
     });
+    
 });
 
 server.listen(process.env.PORT, () => {
