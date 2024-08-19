@@ -21,6 +21,7 @@ if (username) {
 } else {
     buttonSendMessage.remove();
     input.innerHTML = 'Please Provide a Name! Press F5.';
+    input.disable = true;
 }
 
 // Event listener for the form submission
@@ -42,10 +43,10 @@ buttonClearMessage.addEventListener('click', () => {
 });
 
 // Event listener for exporting messages
-exportButton.addEventListener('click', () => {
-    // Redirect to the '/export' route
-    window.location.href = '/export';
-});
+// exportButton.addEventListener('click', () => {
+//     // Redirect to the '/export' route
+//     window.location.href = '/export';
+// });
 
 // Event listener for handling incoming chat messages
 socket.on('chatMessage', (msg) => {
