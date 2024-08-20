@@ -20,14 +20,18 @@ if (username) {
     socket.emit('username', username);
 } else {
     buttonSendMessage.remove();
-    input.innerHTML = 'Please Provide a Name! Press F5.';
-    input.disable = true;
+    buttonClearMessage.remove();
 }
 
 // Event listener for the form submission
 form.addEventListener('submit', (e) => {
     e.preventDefault();
+    
     // If the input has a value, emit 'chatMessage' event and clear the input
+    if (input.value == "") {
+        return;
+    }
+    
     if (input.value) {
         socket.emit('chatMessage', input.value);
         input.value = '';
