@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const ejs = require('ejs');
 const DOMPurify = require('dompurify'); // Sanitization library (to-do)
 const fs = require('fs');
+const crypto = require('crypto');
 
 // Load environment variables from .env file
 require('dotenv').config()
@@ -23,6 +24,7 @@ app.use('/public', express.static(join(__dirname, './public')));
 // Maps to store connected users and messages
 const connectedUsers = new Map();
 const messagesMap = new Map();
+const privateChatsMap = new Map();
 
 // Route to render the chat application
 app.get('/', (req, res) => {
@@ -126,7 +128,16 @@ io.on('connection', (socket) => {
             numbusers: users
         });
     });
+
+    socket.on('initiatePrivateChat', (usernameToChat) => {
+          // TODO: Private  Chat  
+    });
 });
+
+function generateUniqueId() {
+    const idLength = parseInt(process.env.ID_LENGH);
+    return crypto.randomBytes(idLength).toString('hex');
+}
 
 // Start the server on the specified port
 server.listen(process.env.PORT, () => {
