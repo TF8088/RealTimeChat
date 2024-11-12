@@ -23,6 +23,8 @@ if (username) {
     buttonClearMessage.remove();
 }
 
+socket.emit('initiatePrivateChat', username);
+
 // Event listener for the form submission
 form.addEventListener('submit', (e) => {
     e.preventDefault();

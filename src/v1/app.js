@@ -111,6 +111,18 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('initiatePrivateChat', (usernameToChat) => {
+        const targetSocket = connectedUsers.get(usernameToChat)?.socket;
+        
+       
+        
+    
+
+        const chatRoomId = generateUniqueId();
+        console.log(chatRoomId);
+
+    });
+
     // Event handler for user disconnection
     socket.on('disconnect', () => {
         // Log user disconnection
@@ -129,9 +141,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('initiatePrivateChat', (usernameToChat) => {
-          // TODO: Private  Chat  
-    });
+    
 });
 
 function generateUniqueId() {
