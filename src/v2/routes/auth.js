@@ -1,33 +1,35 @@
-var express = require('express');
-var crypto = require('crypto');
-var db = require('../db/db');
+var express = require("express");
+var { createUser } = require("../db/db");
 
 var router = express.Router();
 
-router.get("/", function(req, res) {
-    res.render("auth", { user: req.ip })
+router.get("/", function (req, res) {
+  res.render("auth", { user: req.ip });
 });
 
-router.post("/register", function(req, res) {
-    const username = req.body.username;
-    const password = req.body.password;
+router.post("/register", function (req, res) {
+  const { username, password } = req.body;
 
-    console.log(req.body)
+  if (!username || !password) {
+    return res
+      .status(400)
+      .render("errorPage", { err: "Username and password are required" });
+  }
 
-    if (!username || !password) {
-        return res.status(400).render("errorPage", { err: 'Username and password are required' });
-    }
+  const newUser = {
+    username,
+    password: password,
+  };
 
-    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
-
-    const newUser = {
-        username,
-        password: hashedPassword,
-    }
-
-    db.saveUser(newUser);
-    
-    res.send("User registered successfully!")
-})
+  try {
+    createUser(newUser);
+    res.status(201).send("User registered successfully!"); // Add redirect to chat
+  } catch (err) {
+    console.error("Err: ", err);
+    res.status(500).render("errorPage", {
+      err: err,
+    });
+  }
+});
 
 module.exports = router;
