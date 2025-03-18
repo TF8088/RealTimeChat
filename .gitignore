@@ -1,3 +1,4 @@
 /node_modules
 .env
 package-lock.json
+/src/v2/db/realtimechat.db
