@@ -7,7 +7,7 @@ router.get("/", function (req, res) {
   res.render("auth", { user: req.ip });
 });
 
-router.post("/register", function (req, res) {
+router.post("/register", async function (req, res) {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -22,12 +22,12 @@ router.post("/register", function (req, res) {
   };
 
   try {
-    createUser(newUser);
-    res.status(201).send("User registered successfully!"); // Add redirect to chat
+    await createUser(newUser);
+    res.status(201).send("User registered successfully!");
   } catch (err) {
     console.error("Err: ", err);
     res.status(500).render("errorPage", {
-      err: err,
+      err: "Registration failed. Please try again.",
     });
   }
 });
