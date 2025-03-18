@@ -34,4 +34,6 @@ app.use("/",  indexRouter);
 app.use("/auth", authRouter);
 // app.use("/chat", chatRouter);
 
+console.log("App: http://localhost:8080");
+
 module.exports = app;
